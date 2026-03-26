@@ -41,10 +41,20 @@ def make_acc_latency_scatter(summary_csv: Path, output_path: Path) -> None:
 def make_per_class_summary(per_class_csv: Path, output_csv: Path) -> None:
     df = pd.read_csv(per_class_csv)
     pivot = df.pivot_table(index="label", columns="model", values="class_accuracy")
-    pivot["best_model"] = pivot.idxmax(axis=1)
-    pivot["best_accuracy"] = pivot.max(axis=1)
+
+    model_cols = pivot.columns.tolist()
+    if not model_cols:
+        raise ValueError("No model columns found in per_class_csv.")
+
+    best_model = pivot[model_cols].idxmax(axis=1)
+    best_accuracy = pivot[model_cols].max(axis=1)
+
+    summary = pivot.copy()
+    summary["best_model"] = best_model
+    summary["best_accuracy"] = best_accuracy
+
     output_csv.parent.mkdir(parents=True, exist_ok=True)
-    pivot.reset_index().to_csv(output_csv, index=False)
+    summary.reset_index().to_csv(output_csv, index=False)
 
 
 def parse_args() -> argparse.Namespace:
